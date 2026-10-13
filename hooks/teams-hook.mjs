@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// VS Code agent hook (Local harness) — enforced remote control from Teams.
+// VS Code agent hook (Local harness) — enforced remote control from your phone (Telegram or Teams).
 //
-//  PreToolUse : for tools matching TEAMS_GATE_TOOLS, post an approval card to Teams and BLOCK
+//  PreToolUse : for tools matching BRIDGE_GATE_TOOLS, send an approval request to your phone and BLOCK
 //               the tool until you tap Allow / Deny / Stop agent on your phone.
 //  Stop       : when the agent finishes, ask "Done or continue?". Text you type becomes the
 //               agent's next instruction, so you can keep it working from your phone.
 //
 // Only active while "away mode" is on (npm run away / npm run back), unless
-// TEAMS_REQUIRE_AWAY_FLAG=false. Output format: VS Code Local hooks reference.
+// BRIDGE_REQUIRE_AWAY_FLAG=false. Output format: VS Code Local hooks reference.
 import path from "node:path";
-import { askTeams, notifyTeams, loadConfig, isAway } from "../src/lib.mjs";
+import { ask, notify, loadConfig, isAway } from "../src/lib.mjs";
 
 const cfg = loadConfig();
 const out = (obj) => { process.stdout.write(JSON.stringify(obj)); process.exit(0); };
@@ -39,20 +39,21 @@ async function onPreToolUse(event) {
   const workspace = event.cwd ? path.basename(event.cwd) : "workspace";
   let ans;
   try {
-    ans = await askTeams({
+    ans = await ask({
       title: "⚠️ Approve agent action?",
       question: `Copilot wants to run **${event.tool_name}** in **${workspace}**.`,
       details: describeTool(event),
       options: ["Allow", "Deny", "Stop agent"],
+      textChoice: "Deny", // a text reply = "don't do that, do this instead"
       cfg,
     });
   } catch (err) {
-    // Fail safe: if Teams is unreachable, block the action and tell the model why.
+    // Fail safe: if the phone channel is unreachable, block the action and tell the model why.
     return out({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: `Teams approval unavailable: ${err.message}`,
+        permissionDecisionReason: `Phone approval unavailable: ${err.message}`,
       },
     });
   }
@@ -64,15 +65,15 @@ async function onPreToolUse(event) {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: allow ? "allow" : "deny",
-        permissionDecisionReason: `No answer on Teams within ${cfg.timeoutMinutes} min (policy: ${cfg.onTimeout}).`,
+        permissionDecisionReason: `No answer on the phone within ${cfg.timeoutMinutes} min (policy: ${cfg.onTimeout}).`,
       },
     });
   }
   if (choice.startsWith("stop")) {
     return out({
       continue: false,
-      stopReason: `Stopped from Teams${ans.responder ? ` by ${ans.responder}` : ""}${ans.comment ? `: ${ans.comment}` : ""}`,
-      hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "User pressed Stop agent on Teams." },
+      stopReason: `Stopped from phone${ans.responder ? ` by ${ans.responder}` : ""}${ans.comment ? `: ${ans.comment}` : ""}`,
+      hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "User pressed Stop agent on the phone." },
     });
   }
   const allow = choice.startsWith("allow");
@@ -80,8 +81,8 @@ async function onPreToolUse(event) {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: allow ? "allow" : "deny",
-      permissionDecisionReason: allow ? "Approved on Teams." : "Denied on Teams.",
-      ...(ans.comment ? { additionalContext: `Message from the user via Teams: ${ans.comment}` } : {}),
+      permissionDecisionReason: allow ? "Approved on the phone." : "Denied on the phone.",
+      ...(ans.comment ? { additionalContext: `Message from the user (via phone): ${ans.comment}. Follow it instead of the blocked action.` } : {}),
     },
   });
 }
@@ -91,25 +92,26 @@ async function onStop(event) {
   const workspace = event.cwd ? path.basename(event.cwd) : "workspace";
 
   if (cfg.stopHook === "notify") {
-    try { await notifyTeams({ title: "✅ Copilot agent finished", message: `The agent stopped in **${workspace}**.`, cfg }); } catch {}
+    try { await notify({ title: "✅ Copilot agent finished", message: `The agent stopped in **${workspace}**.`, cfg }); } catch {}
     return pass();
   }
 
   let ans;
   try {
-    ans = await askTeams({
+    ans = await ask({
       title: "✅ Copilot agent finished",
-      question: `The agent stopped in **${workspace}**. Type new instructions and tap **Continue** to keep it working, or tap **Done**.`,
+      question: `The agent stopped in **${workspace}**. Send new instructions to keep it working, or tap **Done**.`,
       options: ["Done", "Continue"],
+      textChoice: "Continue",
       cfg,
     });
   } catch {
-    return pass(); // never trap the agent because Teams is down
+    return pass(); // never trap the agent because the phone channel is down
   }
 
   if (ans.choice.toLowerCase().startsWith("continue")) {
     const reason = ans.comment || "The user asked you to continue. Carry on with the next logical step of the task.";
-    return out({ hookSpecificOutput: { hookEventName: "Stop", decision: "block", reason: `Instruction from the user via Teams: ${reason}` } });
+    return out({ hookSpecificOutput: { hookEventName: "Stop", decision: "block", reason: `Instruction from the user (via phone): ${reason}` } });
   }
   return pass();
 }

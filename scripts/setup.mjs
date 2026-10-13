@@ -57,7 +57,9 @@ fs.writeFileSync(path.join(ROOT, "generated", "mcp.json"), JSON.stringify(mcp, n
 console.log(`
 Next steps
 ──────────
-1. Fill in .env (TEAMS_ASK_FLOW_URL is required; see docs/SETUP-POWER-AUTOMATE.md).
+1. Connect your phone:
+     Telegram (free):  npm run telegram:setup        (docs/SETUP-TELEGRAM.md)
+     Teams (Premium):  fill TEAMS_ASK_FLOW_URL in .env (docs/SETUP-POWER-AUTOMATE.md)
 2. In VS Code: Ctrl+Shift+P → "MCP: Open User Configuration" and merge this in
    (also saved to generated/mcp.json):
 

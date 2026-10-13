@@ -1,7 +1,7 @@
 {
   "name": "teams-agent-bridge",
-  "version": "1.0.0",
-  "description": "Control a GitHub Copilot agent running in VS Code on your PC from Microsoft Teams on your phone (continue / stop / give new instructions).",
+  "version": "1.1.0",
+  "description": "Control a GitHub Copilot agent running in VS Code on your PC from your phone (Telegram or Microsoft Teams): approve, stop, or give new instructions.",
   "type": "module",
   "private": true,
   "engines": {
@@ -16,10 +16,12 @@
     "test": "node scripts/self-test.mjs",
     "away": "node scripts/away.mjs on",
     "back": "node scripts/away.mjs off",
-    "status": "node scripts/away.mjs status"
+    "status": "node scripts/away.mjs status",
+    "telegram:setup": "node scripts/telegram-setup.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "undici": "^7.16.0"
   }
 }
