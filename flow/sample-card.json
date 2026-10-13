@@ -1,0 +1,17 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.4",
+  "body": [
+    { "type": "TextBlock", "text": "⚠️ Approve agent action?", "weight": "Bolder", "size": "Medium", "wrap": true },
+    { "type": "FactSet", "facts": [ { "title": "PC", "value": "MY-WORK-PC" }, { "title": "Time", "value": "10/13/2026, 10:30 PM" } ] },
+    { "type": "TextBlock", "text": "Copilot wants to run **run_in_terminal** in **my-app**.", "wrap": true, "spacing": "Medium" },
+    { "type": "Container", "style": "emphasis", "items": [ { "type": "TextBlock", "text": "$ npm run db:migrate", "wrap": true, "fontType": "Monospace", "size": "Small" } ] },
+    { "type": "Input.Text", "id": "comment", "placeholder": "Optional: extra instructions for the agent", "isMultiline": true }
+  ],
+  "actions": [
+    { "type": "Action.Submit", "id": "Allow", "title": "Allow", "data": { "choice": "Allow" } },
+    { "type": "Action.Submit", "id": "Deny", "title": "Deny", "data": { "choice": "Deny" } },
+    { "type": "Action.Submit", "id": "Stop agent", "title": "Stop agent", "data": { "choice": "Stop agent" } }
+  ]
+}

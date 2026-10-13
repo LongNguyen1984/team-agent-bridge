@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "title": { "type": "string" },
+    "question": { "type": "string" },
+    "options": { "type": "array", "items": { "type": "string" } },
+    "machine": { "type": "string" },
+    "card": { "type": "string" }
+  },
+  "required": ["card"]
+}
