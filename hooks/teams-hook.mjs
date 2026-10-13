@@ -8,11 +8,22 @@
 //
 // Only active while "away mode" is on (npm run away / npm run back), unless
 // BRIDGE_REQUIRE_AWAY_FLAG=false. Output format: VS Code Local hooks reference.
+import fs from "node:fs";
 import path from "node:path";
-import { ask, notify, loadConfig, isAway } from "../src/lib.mjs";
+import { ask, notify, loadConfig, isAway, STATE_DIR } from "../src/lib.mjs";
 
 const cfg = loadConfig();
-const out = (obj) => { process.stdout.write(JSON.stringify(obj)); process.exit(0); };
+const LOG = path.join(STATE_DIR, "hook.log");
+let current = {};
+function log(result) {
+  try {
+    fs.mkdirSync(STATE_DIR, { recursive: true });
+    if (fs.existsSync(LOG) && fs.statSync(LOG).size > 200_000) fs.renameSync(LOG, LOG + ".old");
+    const d = result.hookSpecificOutput?.permissionDecision || result.hookSpecificOutput?.decision || (result.continue === false ? "stop" : "pass");
+    fs.appendFileSync(LOG, `${new Date().toISOString()}  ${current.hook_event_name || "?"}  ${current.tool_name || "-"}  -> ${d}\n`);
+  } catch {}
+}
+const out = (obj) => { log(obj); process.stdout.write(JSON.stringify(obj)); process.exit(0); };
 const pass = () => out({ continue: true });
 
 function readStdin() {
@@ -33,7 +44,7 @@ function describeTool(event) {
 
 async function onPreToolUse(event) {
   let gate;
-  try { gate = new RegExp(cfg.gateTools, "i"); } catch { gate = /run_in_terminal/i; }
+  try { gate = new RegExp(cfg.gateTools, "i"); } catch { gate = /terminal|shell|bash|powershell/i; }
   if (!gate.test(event.tool_name || "")) return pass();
 
   // At your desk (away mode off): make VS Code show its normal on-screen confirmation.
@@ -131,6 +142,7 @@ async function onStop(event) {
 const raw = await readStdin();
 let event = {};
 try { event = JSON.parse(raw || "{}"); } catch { pass(); }
+current = event;
 
 if (!cfg.hookEnabled) pass();
 const atDesk = cfg.requireAwayFlag && !isAway();

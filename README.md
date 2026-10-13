@@ -57,6 +57,7 @@ Then, in VS Code:
 npm run away     # leaving your desk → approvals and "finished?" prompts go to your phone
 npm run back     # back at your desk → hooks go idle
 npm run status   # show current mode and settings
+npm run log      # last hook decisions (tool names, allow/deny…)
 ```
 
 | Message on your phone | Buttons | If you answer with text |
@@ -75,13 +76,13 @@ npm run status   # show current mode and settings
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | (none) | Filled in by `npm run telegram:setup` |
 | `TEAMS_ASK_FLOW_URL`, `TEAMS_NOTIFY_WEBHOOK_URL` | (none) | Power Automate flow URLs (Teams only) |
 | `BRIDGE_TIMEOUT_MINUTES` | `30` | How long to wait for you |
-| `BRIDGE_GATE_TOOLS` | `run_in_terminal` | Regex of tool names that need approval. `.*` means every tool. |
+| `BRIDGE_GATE_TOOLS` | terminal-like tools | Regex of tool names that need approval. `.*` means every tool. |
 | `BRIDGE_ON_TIMEOUT` | `deny` | What a gated tool does if you don't answer |
 | `BRIDGE_STOP_HOOK` | `ask` | `ask` / `notify` / `off` when the agent finishes |
 | `BRIDGE_REQUIRE_AWAY_FLAG` | `true` | If `false`, hooks always route to your phone |
 | `HTTPS_PROXY` | (none) | Company proxy, if the PC needs one to reach the internet |
 
-To find exact tool names to gate, open the agent debug logs while the agent runs.
+To see the exact tool names the agent uses and what the hook decided, run `npm run log`.
 
 ## Important notes
 
@@ -100,7 +101,7 @@ To find exact tool names to gate, open the agent debug logs while the agent runs
 ## Development
 
 ```bash
-npm test         # offline end-to-end tests (fake Teams flow + fake Telegram API, 23 checks)
+npm test         # offline end-to-end tests (fake Teams flow + fake Telegram API, 25 checks)
 npm run mock     # fake Teams flow on localhost:7071; answer cards in the terminal
 ```
 
@@ -117,6 +118,7 @@ hooks/teams-hook.mjs           PreToolUse + Stop hook
 scripts/setup.mjs              one-time install
 scripts/telegram-setup.mjs     link your Telegram bot
 scripts/away.mjs               away / back / status
+scripts/log.mjs                recent hook decisions
 scripts/test-ask.mjs           send a real test question
 scripts/mock-*.mjs, self-test.mjs   offline tests
 docs/                          Telegram and Power Automate setup guides

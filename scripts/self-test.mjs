@@ -83,6 +83,16 @@ try {
   assert.deepEqual(r.json, { continue: true }); ok("non-gated tool passes through");
 
   nextAnswer = { choice: "Allow", comment: "" };
+  for (const name of ["runInTerminal", "copilot_runInTerminal", "run_in_terminal"]) {
+    r = await runHook({ ...teamsEnv, BRIDGE_GATE_TOOLS: "run_in_terminal" }, { ...pre, tool_name: name });
+    assert.equal(r.json.hookSpecificOutput?.permissionDecision, "allow", name);
+  }
+  ok("terminal tool gated under any name (old run_in_terminal setting upgraded)");
+
+  const log = fs.readFileSync(path.join(fakeHome, ".teams-agent-bridge", "hook.log"), "utf8");
+  assert.match(log, /PreToolUse  runInTerminal  -> allow/); ok("hook.log records tool names and decisions");
+
+  nextAnswer = { choice: "Allow", comment: "" };
   r = await runHook(teamsEnv, pre);
   assert.equal(r.json.hookSpecificOutput.permissionDecision, "allow"); ok("Allow → allow");
 

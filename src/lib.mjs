@@ -61,6 +61,8 @@ export async function httpFetch(url, opts = {}) {
 }
 
 // ---------- config ----------
+// Terminal-like tools. Names differ between VS Code versions (run_in_terminal, runInTerminal, …).
+export const DEFAULT_GATE = "terminal|run_?command|shell|bash|powershell|execute";
 export function loadConfig() {
   const e = process.env;
   const bool = (v, d) => (v === undefined || v === "" ? d : /^(1|true|yes|on)$/i.test(v));
@@ -81,7 +83,8 @@ export function loadConfig() {
     machineName: e.BRIDGE_MACHINE_NAME || e.TEAMS_MACHINE_NAME || os.hostname(),
     hookEnabled: bool(e.BRIDGE_HOOK_ENABLED ?? e.TEAMS_HOOK_ENABLED, true),
     requireAwayFlag: bool(e.BRIDGE_REQUIRE_AWAY_FLAG ?? e.TEAMS_REQUIRE_AWAY_FLAG, true),
-    gateTools: e.BRIDGE_GATE_TOOLS || e.TEAMS_GATE_TOOLS || "run_in_terminal",
+    // The old default "run_in_terminal" missed renamed terminal tools; upgrade it automatically.
+    gateTools: ((g) => (!g || g === "run_in_terminal" ? DEFAULT_GATE : g))(e.BRIDGE_GATE_TOOLS || e.TEAMS_GATE_TOOLS),
     onTimeout: (e.BRIDGE_ON_TIMEOUT || e.TEAMS_ON_TIMEOUT || "deny").toLowerCase(),
     stopHook: (e.BRIDGE_STOP_HOOK || e.TEAMS_STOP_HOOK || "ask").toLowerCase(),
   };
