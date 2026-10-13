@@ -68,7 +68,13 @@ try {
   // ───────────── Teams channel ─────────────
   console.log("Teams channel — hook");
   let r = await runHook(teamsEnv, pre);
-  assert.deepEqual(r.json, { continue: true }); ok("idle when away mode is off");
+  assert.equal(r.json.hookSpecificOutput.permissionDecision, "ask"); ok("away mode off: gated tool → on-screen confirmation (ask)");
+
+  r = await runHook(teamsEnv, { ...pre, tool_name: "read_file" });
+  assert.deepEqual(r.json, { continue: true }); ok("away mode off: other tools untouched");
+
+  r = await runHook(teamsEnv, { hook_event_name: "Stop", stop_hook_active: false });
+  assert.deepEqual(r.json, { continue: true }); ok("away mode off: Stop hook idle");
 
   fs.mkdirSync(path.join(fakeHome, ".teams-agent-bridge"), { recursive: true });
   fs.writeFileSync(path.join(fakeHome, ".teams-agent-bridge", "away"), "x");

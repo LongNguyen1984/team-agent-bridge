@@ -36,6 +36,18 @@ async function onPreToolUse(event) {
   try { gate = new RegExp(cfg.gateTools, "i"); } catch { gate = /run_in_terminal/i; }
   if (!gate.test(event.tool_name || "")) return pass();
 
+  // At your desk (away mode off): make VS Code show its normal on-screen confirmation.
+  // This keeps you protected even when VS Code's own terminal auto-approve is turned on.
+  if (atDesk) {
+    return out({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason: "Away mode is off — confirm on screen (run `npm run away` to approve from your phone).",
+      },
+    });
+  }
+
   const workspace = event.cwd ? path.basename(event.cwd) : "workspace";
   let ans;
   try {
@@ -88,7 +100,7 @@ async function onPreToolUse(event) {
 }
 
 async function onStop(event) {
-  if (cfg.stopHook === "off") return pass();
+  if (atDesk || cfg.stopHook === "off") return pass();
   const workspace = event.cwd ? path.basename(event.cwd) : "workspace";
 
   if (cfg.stopHook === "notify") {
@@ -120,7 +132,8 @@ const raw = await readStdin();
 let event = {};
 try { event = JSON.parse(raw || "{}"); } catch { pass(); }
 
-if (!cfg.hookEnabled || (cfg.requireAwayFlag && !isAway())) pass();
+if (!cfg.hookEnabled) pass();
+const atDesk = cfg.requireAwayFlag && !isAway();
 
 switch (event.hook_event_name) {
   case "PreToolUse": await onPreToolUse(event); break;

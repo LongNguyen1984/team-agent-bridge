@@ -25,7 +25,7 @@ There are two layers. You can use either one, or both.
 | **MCP tools** (`src/server.mjs`) | The agent can call `ask_user_on_phone`, `phone_check_in` and `notify_phone`, guided by your instructions file. | Yes. The model decides when to call them. |
 | **Hooks** (`hooks/teams-hook.mjs`) | **PreToolUse** holds gated tools (by default, terminal commands) until you tap Allow, Deny or Stop agent. **Stop** asks "Done or continue?" when the agent finishes, and anything you send becomes its next instruction. | No. VS Code enforces them. |
 
-The hooks only act while **away mode** is on, so nothing changes while you're at your desk.
+The hooks only route to your phone while **away mode** is on. At your desk, gated commands get the normal on-screen confirmation.
 
 ## Requirements
 
@@ -87,7 +87,9 @@ To find exact tool names to gate, open the agent debug logs while the agent runs
 
 - **Session target.** The hook file uses the format of VS Code's **Local** agent harness, which is the default Copilot agent in the Chat view. If you switch the session target to *Copilot CLI / Agent Host*, *Claude* or *Codex*, those harnesses use different hook formats and these hooks may not fire. The MCP tools still work everywhere.
 - **Keep the PC awake.** It must not be sleeping, and VS Code must stay open.
-- **On-screen prompts.** VS Code's own approval prompts can't be answered from the phone. Either enable auto-approve for the tools you're comfortable with and let the hook be your gate, or gate those same tools with `BRIDGE_GATE_TOOLS`.
+- **Turn off VS Code's own terminal prompt.** VS Code asks "Allow this command?" in the chat *before* the hook runs, and that prompt can't be answered from the phone. Do one of these:
+  - **Per session (simplest):** before you leave, pick **Allow all** in the chat input's permissions dropdown, or type `/autoApprove`. The hook still gates terminal commands through your phone.
+  - **Always:** add `"chat.tools.terminal.autoApprove": { "/.*/": true }` to your VS Code user settings. While away mode is off, the hook answers `ask`, so VS Code still shows its on-screen confirmation at your desk. Check this once: with away mode off, ask the agent to run `npm -v`. If it runs without asking you, remove the setting and use the per-session option instead.
 - **Security.**
   - Only your own Telegram chat can answer; anyone else is ignored.
   - Tokens and URLs live in `.env`, which is git-ignored.
@@ -98,7 +100,7 @@ To find exact tool names to gate, open the agent debug logs while the agent runs
 ## Development
 
 ```bash
-npm test         # offline end-to-end tests (fake Teams flow + fake Telegram API, 21 checks)
+npm test         # offline end-to-end tests (fake Teams flow + fake Telegram API, 23 checks)
 npm run mock     # fake Teams flow on localhost:7071; answer cards in the terminal
 ```
 
