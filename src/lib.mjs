@@ -41,8 +41,23 @@ export function updateEnvFile(values) {
 // ---------- HTTP (honours HTTPS_PROXY / HTTP_PROXY / NO_PROXY, common on company PCs) ----------
 const e0 = process.env;
 const proxyAgent = e0.HTTPS_PROXY || e0.https_proxy || e0.HTTP_PROXY || e0.http_proxy ? new EnvHttpProxyAgent() : null;
-export function httpFetch(url, opts = {}) {
-  return proxyAgent ? undiciFetch(url, { ...opts, dispatcher: proxyAgent }) : fetch(url, opts);
+export async function httpFetch(url, opts = {}) {
+  try {
+    return await (proxyAgent ? undiciFetch(url, { ...opts, dispatcher: proxyAgent }) : fetch(url, opts));
+  } catch (e) {
+    // Node only says "fetch failed"; surface the real network reason (DNS, timeout, reset, TLS…).
+    const c = e.cause || {};
+    const host = (() => { try { return new URL(url).host; } catch { return url; } })();
+    const reason = [c.code, c.message].filter(Boolean).join(" ") || e.message;
+    const hint =
+      /ENOTFOUND|EAI_AGAIN/.test(reason) ? " (DNS cannot resolve the host — blocked or offline)"
+      : /TIMEOUT|ETIMEDOUT|ECONNRESET|ECONNREFUSED|UND_ERR_SOCKET/.test(reason) ? " (connection blocked or timed out — firewall/ISP block, or a proxy is required)"
+      : /CERT|SSL|TLS/i.test(reason) ? " (TLS/certificate problem — company HTTPS inspection?)"
+      : "";
+    const err = new Error(`cannot reach ${host}: ${reason}${hint}`);
+    err.cause = e;
+    throw err;
+  }
 }
 
 // ---------- config ----------
